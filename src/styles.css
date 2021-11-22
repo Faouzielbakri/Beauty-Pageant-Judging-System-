@@ -9,6 +9,7 @@
   position: fixed;
   overflow: hidden;
 }
+
 .App-header,
 .App {
   width: 90vw;
@@ -186,6 +187,9 @@ td {
   width: 15rem;
   margin: 1rem auto;
 }
+.scores > .left > button:disabled {
+  background-color: #aaa;
+}
 .scores > .middle,
 .scores > .right,
 .scores > .left {
@@ -202,4 +206,7 @@ td {
 }
 .right > span {
   font-size: 18px;
+}
+.disabled {
+  background: #dddddd;
 }

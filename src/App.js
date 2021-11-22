@@ -2,6 +2,9 @@ import { database, auth } from "./firebase";
 import { useEffect, useState } from "react";
 import "./App.css";
 import "./styles.css";
+import { AdminEmail } from "./constants";
+import Modal from "react-modal";
+
 function App() {
   const [males, setmales] = useState([]);
   const [females, setfemales] = useState([]);
@@ -11,12 +14,16 @@ function App() {
   const [round, setround] = useState(1);
   const [scoresState, setscores] = useState({});
   const [finalScoreState, setfinalScore] = useState({});
-
+  const [modalIsOpen, setmodalIsOpen] = useState(false);
+  const [top, settop] = useState([]);
+  const [winners, setwinners] = useState([]);
   //get all accepted applications ordered By contestant No.
   useEffect(() => {
     // console.log(database.app);
+    const collectionName = round > 2 ? "TopCualified" : "AcceptedApplications";
+
     const sub = database
-      .collection("AcceptedApplications")
+      .collection(collectionName)
       .orderBy("ContestantNo")
       .onSnapshot((snapShot) => {
         if (!snapShot?.empty) {
@@ -32,6 +39,10 @@ function App() {
           });
           setmales(male_list);
           setfemales(femmale_list);
+        } else {
+          alert(
+            "no is cualified to round 3 and 4\nmaybe ask to admin to calculte scores and move the contestants to round 3"
+          );
         }
       });
     return sub;
@@ -116,22 +127,21 @@ function App() {
     const authSub = auth().onAuthStateChanged((userInfo) => {
       // console.log(userInfo);
       if (userInfo) {
-        user.uid &&
-          database
-            .collection("Judges")
-            .doc(`${user.uid}`)
-            .get()
-            .then((doc) => {
-              if (!doc.exists) {
-                database
-                  .collection("Judges")
-                  .doc(`${user.uid}`)
-                  .set({
-                    email: user?.email ? user?.email : "email",
-                  });
-              }
-            });
         setuser(userInfo);
+        database
+          .collection("Judges")
+          .doc(`${userInfo.uid}`)
+          .get()
+          .then((doc) => {
+            if (!doc.exists) {
+              database
+                .collection("Judges")
+                .doc(`${userInfo.uid}`)
+                .set({
+                  email: userInfo?.email ? userInfo?.email : "email",
+                });
+            }
+          });
       } else {
         setuser({});
       }
@@ -143,22 +153,53 @@ function App() {
     console.log(e.target[0].value, e.target[1].value);
     auth().signInWithEmailAndPassword(e.target[0].value, e.target[1].value);
   };
+  const registerTopCualified = () => {
+    database
+      .collection("TopCualified")
+      .get()
+      .then((snapShot) => {
+        if (snapShot.size != 0) {
+          snapShot.forEach((Doc) => {
+            Doc.ref.delete();
+          });
+          setTimeout(() => {
+            registerTopCualified();
+          }, 1000);
+        } else {
+          top.forEach((element) => {
+            database
+              .collection("TopCualified")
+              .doc(`${element?.id}`)
+              .set(element);
+          });
+        }
+      });
+  };
+  const getTop = (limit = 10) => {
+    const result =
+      JSON.stringify(finalScoreState) !== "{}"
+        ? Object.keys(finalScoreState)
+            .sort((a, b) => finalScoreState[a] - finalScoreState[b])
+            .reverse()
+            .map((key, index) => {
+              males.concat(females).forEach((human) => {
+                if (human.ContestantNo === Number(key)) {
+                  return human;
+                }
+                return undefined;
+              });
+            })
+        : "Calculate Scores First";
+    if (Array.isArray(result)) return result.filter((n) => n).slice(0, limit);
+    else return result;
+  };
   const currentRoundScoresCalculator = async () => {
     let scores = {};
 
     males.concat(females).forEach((m) => {
       scores[`${m?.ContestantNo}`] = 0;
     });
-    const LimitNumber =
-      round === 1
-        ? 20
-        : round === 2
-        ? 20
-        : round === 3
-        ? 10
-        : round === 4
-        ? 10
-        : 20;
+
     var groupedArray = males.concat(females);
     groupedArray.forEach((element) => {
       database
@@ -181,16 +222,12 @@ function App() {
                       ) {
                         tempJudgeHolder[`${judge.id}`][
                           `${element.ContestantNo}`
-                        ] = contest.data()[`round${round}`]
-                          ? contest.data()[`round${round}`]
-                          : 0;
+                        ] = getContestantScore(round, contest.data());
                       } else {
                         tempJudgeHolder[`${judge.id}`] = {};
                         tempJudgeHolder[`${judge.id}`][
                           `${element.ContestantNo}`
-                        ] = contest.data()[`round${round}`]
-                          ? contest.data()[`round${round}`]
-                          : 0;
+                        ] = getContestantScore(round, contest.data());
                       }
 
                       setscores({ ...tempJudgeHolder });
@@ -211,20 +248,46 @@ function App() {
               });
             });
             setfinalScore(finalScore);
-            console.log(
-              "fine",
-              Object.keys(finalScore)
-                .sort((a, b) => finalScore[a] - finalScore[b])
-                .reverse()
-            );
+            // console.log(
+            //   "fine",
+            //   Object.keys(finalScore)
+            //     .sort((a, b) => finalScore[a] - finalScore[b])
+            //     .reverse()
+            // );
           }
         })
         .then((results) => {});
     });
   };
+  const getContestantScore = (rnd, data) => {
+    switch (rnd) {
+      case 1:
+        return data[`round1`] ? Number(data[`round1`]) : 0;
+      case 2:
+        return data[`round2`]
+          ? data[`round1`]
+            ? Number(data[`round2`]) + Number(data[`round1`])
+            : Number(data[`round2`])
+          : data[`round1`]
+          ? Number(data[`round2`]) + Number(data[`round1`])
+          : 0;
+      case 3:
+        return data[`round3`] ? Number(data[`round3`]) : 0;
+      case 4:
+        return data[`round4`]
+          ? data[`round3`]
+            ? Number(data[`round4`]) + Number(data[`round3`])
+            : Number(data[`round4`])
+          : data[`round3`]
+          ? Number(data[`round4`]) + Number(data[`round3`])
+          : 0;
 
+      default:
+        return 0;
+    }
+  };
   if (JSON.stringify(user) !== "{}") {
-    if (user.email === "email@email.com")
+    if (user.email === AdminEmail)
       return (
         <div className="App">
           <div className="nav_bar_container">
@@ -269,11 +332,48 @@ function App() {
           </div>
           <div className="scores fullscreen" id="scores">
             <div className="left">
-              <span>
+              <span onClick={() => setmodalIsOpen(true)}>
                 After Calculating The current round score You select only top
                 Contestants to the next round
               </span>
-              <button>Move To Next Round</button>
+              <button
+                disabled={(round !== 2) & (round !== 4)}
+                onClick={() => {
+                  const temp = getTop(round === 2 ? 10 : round === 4 ? 3 : 500);
+                  if (Array.isArray(temp)) {
+                    settop(temp);
+                    if (round === 4) setmodalIsOpen(true);
+                    else {
+                      //show alert of the top 10
+                    }
+                  } else {
+                    alert(temp);
+                  }
+                }}
+              >
+                {round === 2
+                  ? `Move top 10 to the next round`
+                  : round === 4
+                  ? `select the winners`
+                  : `you need to be in round 2 or 4`}
+              </button>
+              <Modal
+                isOpen={modalIsOpen}
+                onRequestClose={() => {
+                  setmodalIsOpen(false);
+                }}
+                style={customStyles}
+                contentLabel="Example Modal"
+              >
+                <div className="modal"> </div>
+                <div className="modal_header">
+                  <h2>the winners are</h2>
+                  <button onClick={() => setmodalIsOpen(false)}>close</button>
+                </div>
+                <div className="winners">
+                  <span></span>
+                </div>
+              </Modal>
             </div>
             <div className="middle">
               <h2
@@ -283,14 +383,29 @@ function App() {
               >
                 Scores
               </h2>
-              <span>Calculate current round ({round}) scores </span>
+              <span>
+                Calculate current round
+                {round === 2
+                  ? ` 1 and 2 `
+                  : round === 4
+                  ? ` 3 and 4 `
+                  : ` ${round} `}
+                scores
+              </span>
               <button onClick={currentRoundScoresCalculator}>Calculate</button>
             </div>
             <div className="right">
-              {
+              {JSON.stringify(finalScoreState) !== "{}" ? (
                 <>
                   <h5>
-                    Contestants Numbers order based on Round{round} points
+                    Contestants Numbers <br />
+                    Order based on Round
+                    {round === 2
+                      ? ` 1 and 2 `
+                      : round === 4
+                      ? ` 3 and 4 `
+                      : ` ${round} `}
+                    points
                   </h5>
                   {Object.keys(finalScoreState)
                     .sort((a, b) => finalScoreState[a] - finalScoreState[b])
@@ -305,7 +420,9 @@ function App() {
                       );
                     })}
                 </>
-              }
+              ) : (
+                <h5>No Calculation has been done yet</h5>
+              )}
             </div>
           </div>
         </div>
@@ -487,3 +604,13 @@ function App() {
 }
 
 export default App;
+const customStyles = {
+  content: {
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+  },
+};
