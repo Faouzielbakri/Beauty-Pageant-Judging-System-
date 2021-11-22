@@ -342,8 +342,10 @@ function App() {
                   const temp = getTop(round === 2 ? 10 : round === 4 ? 3 : 500);
                   if (Array.isArray(temp)) {
                     settop(temp);
-                    if (round === 4) setmodalIsOpen(true);
-                    else {
+                    if (round === 4) {
+                      //modal open with winners
+                      setmodalIsOpen(true);
+                    } else {
                       //show alert of the top 10
                     }
                   } else {
