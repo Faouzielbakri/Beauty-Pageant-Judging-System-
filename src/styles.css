@@ -150,10 +150,19 @@ td {
 .round {
   height: 95vh;
   display: flex;
+  flex-direction: column;
+  padding: 0 1rem;
+  gap: 10vh;
   justify-content: center;
   align-items: center;
 }
-.round > button {
+.round_controller {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.round_controller > button {
   width: 2rem;
   height: 2rem;
   display: flex;
@@ -209,4 +218,49 @@ td {
 }
 .disabled {
   background: #dddddd;
+}
+.modal {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+.modal_header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-transform: capitalize;
+  color: #212121;
+}
+.modal_header > button {
+  background-color: #fff;
+  border-bottom: 1px solid #212121;
+  border-radius: 10px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+}
+.form_buttons > button {
+  cursor: pointer;
+}
+.winners {
+  display: flex;
+  flex-direction: column;
+}
+.modal > button {
+  font-weight: 600;
+  font-size: 20px;
+  background-color: #000;
+  border: 1px solid #000;
+  color: #fff;
+  border-radius: 10px;
+  margin: 1rem 0;
+  cursor: pointer;
+}
+.sameContestant {
+  background-color: #d2d2fff2;
 }
