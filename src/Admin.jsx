@@ -17,13 +17,17 @@ function Admin() {
   const [females, setfemales] = useState([]);
   const [maleIndex, setmaleIndex] = useState(0);
   const [femaleIndex, setfemaleIndex] = useState(0);
-  const [user, setuser] = useState({});
   const [round, setround] = useState(1);
-  const [scoresState, setscores] = useState({});
-  const [finalScoreState, setfinalScore] = useState({});
-  const [modalIsOpen, setmodalIsOpen] = useState(false);
-  const [top, settop] = useState([]);
+  const [scoresStatemale, setscoresmale] = useState({});
+  const [scoresStatefemale, setscoresfemale] = useState({});
+  const [finalScoreStatemale, setfinalScoremale] = useState({});
 
+  const [finalScoreStatefemale, setfinalScorefemale] = useState({});
+  const [modalIsOpen, setmodalIsOpen] = useState(false);
+  const [topfemales, settopfemales] = useState([]);
+  const [topmales, settopmales] = useState([]);
+  const [top, settop] = useState([]);
+  const [CurrentGendre, setCurrentGendre] = useState("male");
   const [curentmale, setcurentmale] = useState({});
   const [curentfemale, setcurentfemale] = useState({});
 
@@ -50,7 +54,7 @@ function Admin() {
   //get all accepted applications ordered By contestant No.
 
   useEffect(() => {
-    const collectionName = round > 2 ? "TopCualified" : "AcceptedApplications";
+    const collectionName = round > 2 ? "TopQualified" : "AcceptedApplications";
     const sub = database
       .collection(collectionName)
       .orderBy("ContestantNo")
@@ -75,7 +79,7 @@ function Admin() {
         }
       });
     return sub;
-  }, []);
+  }, [round]);
   //get current round
   useEffect(() => {
     const sub = database
@@ -94,29 +98,47 @@ function Admin() {
   useEffect(() => {
     setmaleIndex(0);
     setfemaleIndex(0);
+    setfinalScoremale({});
+    setfinalScorefemale({});
   }, [round]);
 
   //move qualified to qualified collection
-  const registerTopCualified = () => {
+  const registerTopQualified = () => {
+    let trigger = false;
     database
-      .collection("TopCualified")
+      .collection("TopQualified")
+      .where("Gender", "==", CurrentGendre)
       .get()
       .then((snapShot) => {
         if (snapShot.size !== 0) {
           snapShot.forEach((Doc) => {
             Doc.ref.delete();
           });
-          setTimeout(() => {
-            registerTopCualified();
-          }, 100);
+          trigger = true;
         } else {
-          top.forEach((element) => {
-            database
-              .collection("TopCualified")
-              .doc(`${element?.id}`)
-              .set(element);
-          });
+          if (CurrentGendre === "male") {
+            topmales.forEach((element) => {
+              database
+                .collection("TopQualified")
+                .doc(`${element?.id}`)
+                .set(element);
+            });
+          } else {
+            topfemales.forEach((element) => {
+              database
+                .collection("TopQualified")
+                .doc(`${element?.id}`)
+                .set(element);
+            });
+          }
         }
+      })
+      .finally(() => {
+        if (trigger)
+          setTimeout(() => {
+            registerTopQualified();
+          }, 1000);
+        trigger = false;
       });
   };
   //get placement text
@@ -145,11 +167,25 @@ function Admin() {
     return `${placement}th`;
   };
   //get top from list
-  const getTop = (limit = 10) => {
+  const getTopmales = () => {
     let result = [];
-    JSON.stringify(finalScoreState) !== "{}" &&
-      Object.keys(finalScoreState)
-        .sort((a, b) => finalScoreState[a] - finalScoreState[b])
+
+    round === 2 &&
+      JSON.stringify(finalScoreStatemale) !== "{}" &&
+      Object.keys(finalScoreStatemale)
+        .sort((a, b) => finalScoreStatemale[a] - finalScoreStatemale[b])
+        .reverse()
+        .forEach((key, index) => {
+          males.concat(females).forEach((human) => {
+            if (human.ContestantNo === Number(key)) {
+              result.push(human);
+            }
+          });
+        });
+    round === 4 &&
+      JSON.stringify(finalScoreStatemale) !== "{}" &&
+      Object.keys(finalScoreStatemale)
+        .sort((a, b) => finalScoreStatemale[a] - finalScoreStatemale[b])
         .reverse()
         .forEach((key, index) => {
           males.concat(females).forEach((human) => {
@@ -159,7 +195,39 @@ function Admin() {
           });
         });
     console.log(result);
-    if (Array.isArray(result)) return result.filter((n) => n).slice(0, limit);
+    if (Array.isArray(result))
+      return result.filter((n) => n).slice(0, round < 3 ? 5 : 3);
+    else return "Calculate Scores First";
+  };
+  const getTopfemales = () => {
+    let result = [];
+    round === 2 &&
+      JSON.stringify(finalScoreStatefemale) !== "{}" &&
+      Object.keys(finalScoreStatefemale)
+        .sort((a, b) => finalScoreStatefemale[a] - finalScoreStatefemale[b])
+        .reverse()
+        .forEach((key, index) => {
+          males.concat(females).forEach((human) => {
+            if (human.ContestantNo === Number(key)) {
+              result.push(human);
+            }
+          });
+        });
+    round === 4 &&
+      JSON.stringify(finalScoreStatefemale) !== "{}" &&
+      Object.keys(finalScoreStatefemale)
+        .sort((a, b) => finalScoreStatefemale[a] - finalScoreStatefemale[b])
+        .reverse()
+        .forEach((key, index) => {
+          males.concat(females).forEach((human) => {
+            if (human.ContestantNo === Number(key)) {
+              result.push(human);
+            }
+          });
+        });
+    console.log(result);
+    if (Array.isArray(result))
+      return result.filter((n) => n).slice(0, round < 3 ? 5 : 3);
     else return "Calculate Scores First";
   };
   //get score from round number and ata obj
@@ -195,12 +263,12 @@ function Admin() {
   const currentRoundScoresCalculator = async () => {
     let scores = {};
 
-    males.concat(females).forEach((m) => {
+    males.forEach((m) => {
       scores[`${m?.ContestantNo}`] = 0;
     });
 
-    var groupedArray = males.concat(females);
-    groupedArray.forEach((element) => {
+    // var groupedArray = males.concat(females);
+    males.forEach((element) => {
       database
         .collection("Judges")
         .get()
@@ -210,11 +278,12 @@ function Admin() {
               judge.ref
                 .collection("marks")
                 .where("ContestantNo", "==", element.ContestantNo)
+                .where("Gender", "==", "male")
                 .get()
                 .then((marksRef) => {
                   if (!marksRef.empty) {
                     marksRef.forEach((contest) => {
-                      var tempJudgeHolder = scoresState;
+                      var tempJudgeHolder = scoresStatemale;
                       if (
                         tempJudgeHolder[`${judge.id}`] === {} ||
                         tempJudgeHolder[`${judge.id}`] !== undefined
@@ -229,24 +298,80 @@ function Admin() {
                         ] = getContestantScore(round, contest.data());
                       }
 
-                      setscores({ ...tempJudgeHolder });
+                      setscoresmale({ ...tempJudgeHolder });
                     });
                   }
                 });
-              console.log("holderJudge", scoresState);
             });
             var finalScore = {};
-            Object.keys(scoresState).forEach((key) => {
+            Object.keys(scoresStatemale).forEach((key) => {
               // console.log(scores, key);
-              Object.keys(scoresState[key]).forEach((subKey) => {
+              Object.keys(scoresStatemale[key]).forEach((subKey) => {
                 if (finalScore[subKey]) {
-                  finalScore[subKey] += scoresState[key][subKey];
+                  finalScore[subKey] += scoresStatemale[key][subKey];
                 } else {
-                  finalScore[subKey] = scoresState[key][subKey];
+                  finalScore[subKey] = scoresStatemale[key][subKey];
                 }
               });
             });
-            setfinalScore(finalScore);
+            setfinalScoremale(finalScore);
+          }
+        });
+    });
+
+    scores = {};
+    females.forEach((m) => {
+      scores[`${m?.ContestantNo}`] = 0;
+    });
+    females.forEach((element) => {
+      //   console.log(element.ContestantNo);
+      database
+        .collection("Judges")
+        .get()
+        .then((judgeRef) => {
+          if (!judgeRef.empty) {
+            judgeRef.forEach((judge) => {
+              judge.ref
+                .collection("marks")
+                .where("ContestantNo", "==", element.ContestantNo)
+                .where("Gender", "==", "female")
+                .get()
+                .then((marksRef) => {
+                  if (!marksRef.empty) {
+                    // console.log("finalScore", females.length);
+                    marksRef.forEach((contest) => {
+                      var tempJudgeHolder = scoresStatefemale;
+                      if (
+                        tempJudgeHolder[`${judge.id}`] === {} ||
+                        tempJudgeHolder[`${judge.id}`] !== undefined
+                      ) {
+                        tempJudgeHolder[`${judge.id}`][
+                          `${element.ContestantNo}`
+                        ] = getContestantScore(round, contest.data());
+                      } else {
+                        tempJudgeHolder[`${judge.id}`] = {};
+                        tempJudgeHolder[`${judge.id}`][
+                          `${element.ContestantNo}`
+                        ] = getContestantScore(round, contest.data());
+                      }
+
+                      setscoresfemale({ ...tempJudgeHolder });
+                    });
+                  }
+                });
+            });
+            var finalScore = {};
+            Object.keys(scoresStatefemale).forEach((key) => {
+              // console.log(scores, key);
+              Object.keys(scoresStatefemale[key]).forEach((subKey) => {
+                if (finalScore[subKey]) {
+                  finalScore[subKey] += scoresStatefemale[key][subKey];
+                } else {
+                  finalScore[subKey] = scoresStatefemale[key][subKey];
+                }
+              });
+            });
+            setfinalScorefemale(finalScore);
           }
         });
     });
@@ -263,34 +388,15 @@ function Admin() {
   };
   //show current Contestant to the judges
   const Submit = (gendre) => {
-    database
-      .collection("currentContestants")
-      .where("Gendre", "==", gendre)
-      .get()
-      .then((snapShot) => {
-        if (snapShot.size === 0) {
-          let TempHolder =
-            gendre === "male" ? males[maleIndex] : females[femaleIndex];
-          console.log(TempHolder);
-          database
-            .collection("currentContestants")
-            .doc(`${TempHolder.id}`)
-            .set(TempHolder)
-            .then((doc) => {
-              console.log("doc");
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-        } else {
-          snapShot.forEach((doc) => {
-            doc.ref.delete();
-          });
-          setTimeout(() => {
-            Submit(gendre);
-          }, 100);
-        }
-      });
+    gendre === "male"
+      ? database
+          .collection("currentContestants")
+          .doc("male")
+          .set(males[maleIndex])
+      : database
+          .collection("currentContestants")
+          .doc("female")
+          .set(females[femaleIndex]);
   };
   return (
     <div className="App">
@@ -299,7 +405,7 @@ function Admin() {
         <a
           href="#scores"
           onClick={() => {
-            console.log(auth().currentUser.uid);
+            // console.log(auth().currentUser.uid);
           }}
         >
           Scores
@@ -458,29 +564,29 @@ function Admin() {
         </div>
       </div>
       <div className="scores fullscreen" id="scores">
-        <div className="left">
+        {/* <div className="left">
           <span onClick={() => setmodalIsOpen(true)}>
             After Calculating The current round score You select only top
             Contestants to the next round
           </span>
           <button
             disabled={(round !== 2) & (round !== 4)}
-            onClick={() => {
-              const temp = getTop(round === 2 ? 10 : round === 4 ? 3 : 500);
-              if (Array.isArray(temp)) {
-                settop(temp);
-                console.log(temp);
-                if (round === 4) {
-                  //modal open with winners
-                  setmodalIsOpen(true);
-                } else {
-                  //show alert of the top 10
-                  setmodalIsOpen(true);
-                }
-              } else {
-                alert(temp);
-              }
-            }}
+            // onClick={() => {
+            //   const temp = getTop(round === 2 ? 10 : round === 4 ? 3 : 500);
+            //   if (Array.isArray(temp)) {
+            //     settop(temp);
+            //     // console.log(temp);
+            //     if (round === 4) {
+            //       //modal open with winners
+            //       setmodalIsOpen(true);
+            //     } else {
+            //       //show alert of the top 10
+            //       setmodalIsOpen(true);
+            //     }
+            //   } else {
+            //     alert(temp);
+            //   }
+            // }}
           >
             {round === 2
               ? `Move top 10 to the next round`
@@ -488,91 +594,145 @@ function Admin() {
               ? `select the winners`
               : `you need to be in round 2 or 4`}
           </button>
-          <Modal
-            isOpen={modalIsOpen}
-            onRequestClose={() => {
-              setmodalIsOpen(false);
-            }}
-            style={customStyles}
-            contentLabel="Example Modal"
-          >
-            <div className="modal">
-              <div className="modal_header">
-                <h2 onClick={() => console.log(top)}>
-                  {round < 3 ? "Top 10" : `the winners`}
-                </h2>
-                <button onClick={() => setmodalIsOpen(false)}>x</button>
-              </div>
-              <div className="winners">
-                {top.map((winner, index) => {
-                  return (
-                    <span>
-                      {`${placementtext(index + 1)} - `}{" "}
-                      <b>{` ${winner.firstName} ${winner.lastName} `}</b>{" "}
-                    </span>
-                  );
-                })}
-              </div>
-              {round < 3 && (
+          
+        </div> */}
+        <Modal
+          isOpen={modalIsOpen}
+          onRequestClose={() => {
+            setmodalIsOpen(false);
+          }}
+          style={customStyles}
+          contentLabel="Example Modal"
+        >
+          <div className="modal">
+            <div className="modal_header">
+              <h2 onClick={() => console.log(top)}>
+                {round < 3 ? "Top 10" : `the winners`}
+              </h2>
+              <button onClick={() => setmodalIsOpen(false)}>x</button>
+            </div>
+            <div className="winners">
+              {top.map((winner, index) => {
+                return (
+                  <span>
+                    {`${placementtext(index + 1)} - `}{" "}
+                    <b>{` ${winner.firstName} ${winner.lastName} `}</b>{" "}
+                  </span>
+                );
+              })}
+            </div>
+            {round < 3 && (
+              <button
+                onClick={() => {
+                  registerTopQualified();
+                }}
+              >
+                Move Top 5
+              </button>
+            )}
+          </div>
+        </Modal>
+        <div className="right">
+          <div className="middle">
+            <span>
+              Calculate current round
+              {round === 2
+                ? ` 1 and 2 `
+                : round === 4
+                ? ` 3 and 4 `
+                : ` ${round} `}
+              scores
+            </span>
+            <button onClick={currentRoundScoresCalculator}>Calculate</button>
+          </div>
+          <div className={"contestants"}>
+            <div className="males">
+              {(round === 2 || round === 4) && (
                 <button
                   onClick={() => {
-                    registerTopCualified();
+                    const theReturn = getTopmales();
+                    if (Array.isArray(theReturn)) {
+                      settopmales(theReturn);
+                      setCurrentGendre("male");
+                      settop(theReturn);
+                      setmodalIsOpen(true);
+                    } else {
+                      console.log(theReturn);
+                    }
                   }}
                 >
-                  Move Top 10
+                  {round < 3 ? `get Top 5 males` : `get the winners`}
                 </button>
               )}
+              {JSON.stringify(finalScoreStatemale) !== "{}" ? (
+                <>
+                  <h5>
+                    Males Contestants Order by points
+                    <br />
+                  </h5>
+                  {Object.keys(finalScoreStatemale)
+                    .sort(
+                      (a, b) => finalScoreStatemale[a] - finalScoreStatemale[b]
+                    )
+                    .reverse()
+                    .map((key, index) => {
+                      return (
+                        <span key={`male${key}`}>
+                          {/* {JSON.stringify(finalScoreState[key])} */}
+                          {placementtext(index + 1)} : Contestant No{" "}
+                          {Number(key)} - total points{" "}
+                          {finalScoreStatemale[key]}
+                        </span>
+                      );
+                    })}
+                </>
+              ) : (
+                <h5>Press Calculate To show male Contestants in order</h5>
+              )}
             </div>
-          </Modal>
-        </div>
-        <div className="middle">
-          <h2
-            onClick={() => {
-              console.log(finalScoreState);
-            }}
-          >
-            Scores
-          </h2>
-          <span>
-            Calculate current round
-            {round === 2
-              ? ` 1 and 2 `
-              : round === 4
-              ? ` 3 and 4 `
-              : ` ${round} `}
-            scores
-          </span>
-          <button onClick={currentRoundScoresCalculator}>Calculate</button>
-        </div>
-        <div className="right">
-          {JSON.stringify(finalScoreState) !== "{}" ? (
-            <>
-              <h5>
-                Contestants Numbers <br />
-                Order based on Round
-                {round === 2
-                  ? ` 1 and 2 `
-                  : round === 4
-                  ? ` 3 and 4 `
-                  : ` ${round} `}
-                points
-              </h5>
-              {Object.keys(finalScoreState)
-                .sort((a, b) => finalScoreState[a] - finalScoreState[b])
-                .reverse()
-                .map((key, index) => {
-                  return (
-                    <span>
-                      {/* {JSON.stringify(finalScoreState[key])} */}
-                      Contestant No : {key} - Placed : {Number(index + 1)} -
-                      total points {finalScoreState[key]}
-                    </span>
-                  );
-                })}
-            </>
-          ) : (
-            <h5>No Calculation has been done yet</h5>
-          )}
+            <div className="females">
+              {(round === 2 || round === 4) && (
+                <button
+                  onClick={() => {
+                    const theReturn = getTopfemales();
+                    if (Array.isArray(theReturn)) {
+                      settopfemales(theReturn);
+                      setCurrentGendre("female");
+                      settop(theReturn);
+                      setmodalIsOpen(true);
+                    } else {
+                      console.log(theReturn);
+                    }
+                  }}
+                >
+                  {round < 3 ? `get Top 5 females` : `get the winners`}
+                </button>
+              )}
+              {JSON.stringify(finalScoreStatefemale) !== "{}" ? (
+                <>
+                  <h5>Females Contestants Order by points</h5>
+                  {Object.keys(finalScoreStatefemale)
+                    .sort(
+                      (a, b) =>
+                        finalScoreStatefemale[a] - finalScoreStatefemale[b]
+                    )
+                    .reverse()
+                    .map((key, index) => {
+                      return (
+                        <span key={`female${key}`}>
+                          {/* {JSON.stringify(finalScoreState[key])} */}
+                          {placementtext(index + 1)} : Contestant No{" "}
+                          {Number(key)} - total points{" "}
+                          {finalScoreStatefemale[key]}
+                        </span>
+                      );
+                    })}
+                </>
+              ) : (
+                <h5>Press Calculate To show female Contestants in order</h5>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

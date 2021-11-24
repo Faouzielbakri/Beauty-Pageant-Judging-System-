@@ -14,10 +14,10 @@ function Judge() {
         if (!snapShot?.empty) {
           snapShot.forEach((contestant) => {
             //seperate the applications based on gendre
-            if (contestant?.data().Gender === "male") {
-              setcurentmale({ id: contestant.id, ...contestant.data() });
+            if (contestant?.id === "male") {
+              setcurentmale({ ...contestant.data() });
             } else {
-              setcurentfemale({ id: contestant.id, ...contestant.data() });
+              setcurentfemale({ ...contestant.data() });
             }
           });
         } else {
@@ -40,7 +40,18 @@ function Judge() {
       });
     return sub;
   }, []);
-
+  useEffect(() => {
+    const judgeSub = database
+      .collection("Judges")
+      .doc(`${auth().currentUser.uid}`)
+      .get()
+      .then((data) => {
+        if (!data.exists) {
+          data.ref.set({ email: auth().currentUser.email });
+        }
+      });
+    return judgeSub;
+  }, []);
   //judges submit
   const Submit = (e) => {
     e.preventDefault();
@@ -49,25 +60,24 @@ function Judge() {
     if (e.target[0].name === "male")
       dataToSet[`ContestantNo`] = curentmale.ContestantNo;
     else dataToSet[`ContestantNo`] = curentfemale.ContestantNo;
+    dataToSet[`Gender`] = e.target[0].name;
     database
       .collection("Judges")
       .doc(`${auth().currentUser.uid}`)
       .collection("marks")
-      .where("ContestantNo", "==", dataToSet[`ContestantNo`])
+      .doc(`${dataToSet[`ContestantNo`]}`)
       .get()
       .then((docsRef) => {
         try {
-          if (docsRef.empty) {
+          if (docsRef.exists) {
             database
               .collection("Judges")
               .doc(`${auth().currentUser.uid}`)
               .collection("marks")
-              .doc()
+              .doc(`${dataToSet[`ContestantNo`]}`)
               .set(dataToSet);
           } else {
-            docsRef.forEach((docuRef) => {
-              docuRef.ref.update(dataToSet);
-            });
+            docsRef.ref.update(dataToSet);
           }
           e.target[0].name === "male" ? setcurentmale({}) : setcurentfemale({});
         } catch (error) {

@@ -179,9 +179,11 @@ td {
 .scores {
   flex-direction: row;
   font-weight: 500;
+  height: 100vh;
 }
-.scores > .middle > button,
-.scores > .left > button {
+.middle > button,
+.scores > .left > button,
+button {
   padding: 0.5rem 1rem;
   font-weight: 600;
   font-size: 20px;
@@ -199,13 +201,26 @@ td {
 .scores > .left > button:disabled {
   background-color: #aaa;
 }
-.scores > .middle,
+.middle,
 .scores > .right,
 .scores > .left {
   display: flex;
+
+  font-weight: 500;
+}
+.scores > .right {
   flex-direction: column;
   flex: 1;
-  font-weight: 500;
+  gap: 1rem;
+}
+
+.scores > .left {
+  justify-content: flex-start;
+  flex-direction: column;
+  /* flex: 0.33; */
+  padding-top: 10vh;
+  min-height: 80vh;
+  /* background-color: #f00; */
 }
 .scores .right {
   white-space: nowrap;
@@ -263,4 +278,38 @@ td {
 }
 .sameContestant {
   background-color: #d2d2fff2;
+}
+.right .males {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right-width: 1px;
+  border-left-width: 0px;
+  border-top-width: 0px;
+  border-bottom-width: 0px;
+
+  border-color: #000;
+  border-style: solid;
+  padding-right: 0.5rem;
+}
+.right .females {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-left-width: 1px;
+  border-right-width: 0px;
+  border-top-width: 0px;
+  border-bottom-width: 0px;
+
+  border-color: #000;
+  border-style: solid;
+  padding-left: 0.5rem;
+}
+.middle {
+  flex-direction: column;
+}
+.contestants {
+  display: flex;
+  flex-direction: row;
+  /* gap: 1rem; */
 }
