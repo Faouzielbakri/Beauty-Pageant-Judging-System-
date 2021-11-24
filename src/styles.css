@@ -183,7 +183,8 @@ td {
 }
 .middle > button,
 .scores > .left > button,
-button {
+.males > button,
+.females > button {
   padding: 0.5rem 1rem;
   font-weight: 600;
   font-size: 20px;
@@ -194,6 +195,7 @@ button {
   margin: 1rem 0;
   cursor: pointer;
 }
+
 .scores > .left > button {
   width: 15rem;
   margin: 1rem auto;
