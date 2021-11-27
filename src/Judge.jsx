@@ -66,24 +66,37 @@ function Judge() {
       .doc(`${auth().currentUser.uid}`)
       .collection("marks")
       .doc(`${dataToSet[`ContestantNo`]}`)
-      .get()
-      .then((docsRef) => {
-        try {
-          if (docsRef.exists) {
-            database
-              .collection("Judges")
-              .doc(`${auth().currentUser.uid}`)
-              .collection("marks")
-              .doc(`${dataToSet[`ContestantNo`]}`)
-              .set(dataToSet);
-          } else {
-            docsRef.ref.update(dataToSet);
-          }
-          e.target[0].name === "male" ? setcurentmale({}) : setcurentfemale({});
-        } catch (error) {
-          console.log(error);
-        }
-      });
+      .set(dataToSet)
+      .then(() => {
+        e.target[0].name === "male" ? setcurentmale({}) : setcurentfemale({});
+      })
+      .catch((err) => console.log(err));
+    // .get()
+    // .then((docsRef) => {
+    //   try {
+    //     if (docsRef.exists) {
+    //       database
+    //         .collection("Judges")
+    //         .doc(`${auth().currentUser.uid}`)
+    //         .collection("marks")
+    //         .doc(`${dataToSet[`ContestantNo`]}`)
+    //         .set(dataToSet);
+    //       console.log("done", dataToSet[`ContestantNo`]);
+    //     } else {
+    //       database
+    //         .collection("Judges")
+    //         .doc(`${auth().currentUser.uid}`)
+    //         .collection("marks")
+    //         .doc(`${dataToSet[`ContestantNo`]}`)
+    //         .update(dataToSet);
+    //       console.log("done", dataToSet[`ContestantNo`]);
+    //     }
+
+    //     e.target[0].name === "male" ? setcurentmale({}) : setcurentfemale({});
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // });
   };
   return (
     <div className="App">
@@ -149,7 +162,13 @@ function Judge() {
           <form className="contestant male" onSubmit={Submit}>
             {JSON.stringify(curentmale) !== "{}" ? (
               <>
-                <h3>Male Contestants</h3>
+                <h3
+                  onClick={() => {
+                    console.log(auth().currentUser.email);
+                  }}
+                >
+                  Male Contestants
+                </h3>
                 <span>Contestant number : {curentmale.ContestantNo}</span>
                 <h4 id="contestant_name">{`${curentmale.firstName} ${curentmale.lastName}`}</h4>
                 <h4 id="contestant_name">From {curentmale.Nationality}</h4>
@@ -160,7 +179,7 @@ function Judge() {
                       type="number"
                       name="male"
                       placeholder="0"
-                      max={10}
+                      max={30}
                       min={0}
                     />
                   </div>
@@ -187,7 +206,7 @@ function Judge() {
                       type="number"
                       name="female"
                       placeholder="0"
-                      max={10}
+                      max={30}
                       min={0}
                     />
                   </div>
