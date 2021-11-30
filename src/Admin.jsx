@@ -62,8 +62,10 @@ function Admin() {
         if (!snapShot?.empty) {
           const male_list = [];
           const femmale_list = [];
+          console.log(snapShot.size);
           snapShot.forEach((contestant) => {
             //seperate the applications based on gendre
+
             if (contestant?.data().Gender === "male") {
               male_list.push({ id: contestant.id, ...contestant.data() });
             } else {
@@ -139,6 +141,9 @@ function Admin() {
             registerTopQualified();
           }, 1000);
         trigger = false;
+      })
+      .finally(() => {
+        alert("Finished");
       });
   };
   //get placement text
@@ -244,15 +249,102 @@ function Admin() {
           ? Number(data[`round2`]) + Number(data[`round1`])
           : 0;
       case 3:
-        return data[`round3`] ? Number(data[`round3`]) : 0;
+        if (data[`round3`]) {
+          if (data[`round2`]) {
+            if (data[`round1`]) {
+              return data[`round1`] + data[`round2`] + data[`round3`];
+            } else {
+              return data[`round2`] + data[`round3`];
+            }
+          } else {
+            if (data[`round1`]) {
+              return data[`round1`] + data[`round3`];
+            } else {
+              return data[`round3`];
+            }
+          }
+        } else {
+          if (data[`round2`]) {
+            if (data[`round1`]) {
+              return data[`round1`] + data[`round2`];
+            } else {
+              return 0;
+            }
+          } else {
+            if (data[`round1`]) {
+              return data[`round1`];
+            } else {
+              return 0;
+            }
+          }
+        }
       case 4:
-        return data[`round4`]
-          ? data[`round3`]
-            ? Number(data[`round4`]) + Number(data[`round3`])
-            : Number(data[`round4`])
-          : data[`round3`]
-          ? Number(data[`round4`]) + Number(data[`round3`])
-          : 0;
+        if (data[`round4`]) {
+          if (data[`round3`]) {
+            if (data[`round2`]) {
+              if (data[`round1`]) {
+                return (
+                  data[`round1`] +
+                  data[`round2`] +
+                  data[`round3`] +
+                  data[`round4`]
+                );
+              } else {
+                return data[`round2`] + data[`round3`] + data[`round4`];
+              }
+            } else {
+              if (data[`round1`]) {
+                return data[`round1`] + data[`round3`] + data[`round4`];
+              } else {
+                return data[`round3`] + data[`round4`];
+              }
+            }
+          } else {
+            if (data[`round2`]) {
+              if (data[`round1`]) {
+                return data[`round1`] + data[`round2`] + data[`round4`];
+              } else {
+                return 0 + data[`round4`];
+              }
+            } else {
+              if (data[`round1`]) {
+                return data[`round1`] + data[`round4`];
+              } else {
+                return 0 + data[`round4`];
+              }
+            }
+          }
+        } else {
+          if (data[`round3`]) {
+            if (data[`round2`]) {
+              if (data[`round1`]) {
+                return data[`round1`] + data[`round2`] + data[`round3`];
+              } else {
+                return data[`round2`] + data[`round3`];
+              }
+            } else {
+              if (data[`round1`]) {
+                return data[`round1`] + data[`round3`];
+              } else {
+                return data[`round3`];
+              }
+            }
+          } else {
+            if (data[`round2`]) {
+              if (data[`round1`]) {
+                return data[`round1`] + data[`round2`];
+              } else {
+                return 0;
+              }
+            } else {
+              if (data[`round1`]) {
+                return data[`round1`];
+              } else {
+                return 0;
+              }
+            }
+          }
+        }
 
       default:
         return 0;
@@ -324,7 +416,6 @@ function Admin() {
       scores[`${m?.ContestantNo}`] = 0;
     });
     females.forEach((element) => {
-      //   console.log(element.ContestantNo);
       database
         .collection("Judges")
         .get()
@@ -379,10 +470,10 @@ function Admin() {
   //move to current contestant
   const Move = (indecator, gendre) => {
     if (gendre === "male") {
-      if (maleIndex + indecator > males.length - 1) return;
+      // if (maleIndex + indecator > males.length - 1) return;
       setmaleIndex(maleIndex + indecator);
     } else {
-      if (femaleIndex + indecator > females.length - 1) return;
+      // if (femaleIndex + indecator > females.length - 1) return;
       setfemaleIndex(femaleIndex + indecator);
     }
   };
@@ -449,7 +540,7 @@ function Admin() {
             }`}
             onSubmit={Submit}
           >
-            {males.length - 1 > maleIndex ? (
+            {males[maleIndex] !== undefined ? (
               <>
                 <h3 onClick={() => console.log(maleIndex)}>Male Contestants</h3>
                 <span>
@@ -509,9 +600,15 @@ function Admin() {
             }`}
             onSubmit={Submit}
           >
-            {females.length - 1 > femaleIndex ? (
+            {females[femaleIndex] !== undefined ? (
               <>
-                <h3>Female Contestants</h3>
+                <h3
+                  onClick={() => {
+                    console.log(females.length);
+                  }}
+                >
+                  Female Contestants
+                </h3>
                 <span>
                   Contestant number : {females[femaleIndex]?.ContestantNo}
                 </span>
@@ -548,7 +645,7 @@ function Admin() {
               </>
             ) : (
               <>
-                <span>No Feale Contestant Available</span>
+                <span>No Female Contestant Available</span>
                 <div className="form_buttons">
                   <button
                     onClick={() => {
@@ -676,14 +773,35 @@ function Admin() {
                     )
                     .reverse()
                     .map((key, index) => {
-                      return (
-                        <span key={`male${key}`}>
-                          {/* {JSON.stringify(finalScoreState[key])} */}
-                          {placementtext(index + 1)} : Contestant No{" "}
-                          {Number(key)} - total points{" "}
-                          {finalScoreStatemale[key]}
-                        </span>
-                      );
+                      if (round > 2) {
+                        if (index < 5)
+                          return (
+                            <span key={`male${key}`}>
+                              {/* {JSON.stringify(finalScoreState[key])} */}
+                              {placementtext(index + 1)} : Contestant No{" "}
+                              {Number(key)} - total points{" "}
+                              {finalScoreStatemale[key]}
+                            </span>
+                          );
+                        return undefined;
+                      } else {
+                        return (
+                          <span key={`male${key}`}>
+                            {/* {JSON.stringify(finalScoreState[key])} */}
+                            {placementtext(index + 1)} : Contestant No{" "}
+                            {Number(key)} - total points{" "}
+                            {finalScoreStatemale[key]}
+                          </span>
+                        );
+                      }
+                      // return (
+                      //   <span key={`male${key}`}>
+                      //     {/* {JSON.stringify(finalScoreState[key])} */}
+                      //     {placementtext(index + 1)} : Contestant No{" "}
+                      //     {Number(key)} - total points{" "}
+                      //     {finalScoreStatemale[key]}
+                      //   </span>
+                      // );
                     })}
                 </>
               ) : (
@@ -710,7 +828,13 @@ function Admin() {
               )}
               {JSON.stringify(finalScoreStatefemale) !== "{}" ? (
                 <>
-                  <h5>Females Contestants Order by points</h5>
+                  <h5
+                    onClick={() => {
+                      alert(Object.keys(finalScoreStatefemale).length);
+                    }}
+                  >
+                    Females Contestants Order by points
+                  </h5>
                   {Object.keys(finalScoreStatefemale)
                     .sort(
                       (a, b) =>
@@ -718,14 +842,27 @@ function Admin() {
                     )
                     .reverse()
                     .map((key, index) => {
-                      return (
-                        <span key={`female${key}`}>
-                          {/* {JSON.stringify(finalScoreState[key])} */}
-                          {placementtext(index + 1)} : Contestant No{" "}
-                          {Number(key)} - total points{" "}
-                          {finalScoreStatefemale[key]}
-                        </span>
-                      );
+                      if (round > 2) {
+                        if (index < 5)
+                          return (
+                            <span key={`female${key}`}>
+                              {/* {JSON.stringify(finalScoreState[key])} */}
+                              {placementtext(index + 1)} : Contestant No{" "}
+                              {Number(key)} - total points{" "}
+                              {finalScoreStatefemale[key]}
+                            </span>
+                          );
+                        return undefined;
+                      } else {
+                        return (
+                          <span key={`female${key}`}>
+                            {/* {JSON.stringify(finalScoreState[key])} */}
+                            {placementtext(index + 1)} : Contestant No{" "}
+                            {Number(key)} - total points{" "}
+                            {finalScoreStatefemale[key]}
+                          </span>
+                        );
+                      }
                     })}
                 </>
               ) : (

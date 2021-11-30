@@ -66,7 +66,7 @@ function Judge() {
       .doc(`${auth().currentUser.uid}`)
       .collection("marks")
       .doc(`${dataToSet[`ContestantNo`]}`)
-      .set(dataToSet)
+      .set(dataToSet, { merge: true })
       .then(() => {
         e.target[0].name === "male" ? setcurentmale({}) : setcurentfemale({});
       })
