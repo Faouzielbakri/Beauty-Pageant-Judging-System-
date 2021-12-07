@@ -7,6 +7,7 @@ function Judge() {
   const [round, setround] = useState(1);
 
   useEffect(() => {
+    //fetch current contestant
     const sub = database
       .collection("currentContestants")
       .orderBy("ContestantNo")
@@ -28,6 +29,7 @@ function Judge() {
   }, []);
 
   useEffect(() => {
+    //get current round number
     const sub = database
       .collection("Round")
       .doc("round")
@@ -41,6 +43,7 @@ function Judge() {
     return sub;
   }, []);
   useEffect(() => {
+    //if judges is signed for first time write his email to DB
     const judgeSub = database
       .collection("Judges")
       .doc(`${auth().currentUser.uid}`)
@@ -52,7 +55,7 @@ function Judge() {
       });
     return judgeSub;
   }, []);
-  //judges submit
+  //judges submit scores to DB
   const Submit = (e) => {
     e.preventDefault();
     var dataToSet = {};
@@ -71,32 +74,6 @@ function Judge() {
         e.target[0].name === "male" ? setcurentmale({}) : setcurentfemale({});
       })
       .catch((err) => console.log(err));
-    // .get()
-    // .then((docsRef) => {
-    //   try {
-    //     if (docsRef.exists) {
-    //       database
-    //         .collection("Judges")
-    //         .doc(`${auth().currentUser.uid}`)
-    //         .collection("marks")
-    //         .doc(`${dataToSet[`ContestantNo`]}`)
-    //         .set(dataToSet);
-    //       console.log("done", dataToSet[`ContestantNo`]);
-    //     } else {
-    //       database
-    //         .collection("Judges")
-    //         .doc(`${auth().currentUser.uid}`)
-    //         .collection("marks")
-    //         .doc(`${dataToSet[`ContestantNo`]}`)
-    //         .update(dataToSet);
-    //       console.log("done", dataToSet[`ContestantNo`]);
-    //     }
-
-    //     e.target[0].name === "male" ? setcurentmale({}) : setcurentfemale({});
-    //   } catch (error) {
-    //     console.log(error);
-    //   }
-    // });
   };
   return (
     <div className="App">
@@ -116,7 +93,26 @@ function Judge() {
         <section id="panel-3">
           <main>
             <header>
-              <h3>Mr and Miss IUM Judging Criteria 2021</h3>
+              <h3
+                onClick={() => {
+                  database
+                    .collection("AcceptedApplications")
+                    .orderBy("ContestantNo", "asc")
+                    .get()
+                    .then((snapShot) => {
+                      if (!snapShot.empty) {
+                        let i = 1;
+                        snapShot.forEach((doc) => {
+                          doc.ref.set({ ContestantNo: i }, { merge: true });
+                          console.log(i);
+                          i++;
+                        });
+                      }
+                    });
+                }}
+              >
+                Mr and Miss IUM Judging Criteria 2021
+              </h3>
               <p>Here is the 2021 Judging Criteria</p>
             </header>
 

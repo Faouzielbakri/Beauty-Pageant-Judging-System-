@@ -13,6 +13,7 @@ const customStyles = {
 };
 
 function Admin() {
+  //defining all the variable that will be needed in the admin panel
   const [males, setmales] = useState([]);
   const [females, setfemales] = useState([]);
   const [maleIndex, setmaleIndex] = useState(0);
@@ -32,6 +33,7 @@ function Admin() {
   const [curentfemale, setcurentfemale] = useState({});
 
   useEffect(() => {
+    //listener to fetch curent contestants  from DB ordered by ContestantNo
     const sub = database
       .collection("currentContestants")
       .orderBy("ContestantNo")
@@ -51,10 +53,10 @@ function Admin() {
     return sub;
   }, []);
 
-  //get all accepted applications ordered By contestant No.
-
   useEffect(() => {
+    //the collection where to fetch based on current round number
     const collectionName = round > 2 ? "TopQualified" : "AcceptedApplications";
+    //get all accepted applications ordered By contestant No FROM Db.
     const sub = database
       .collection(collectionName)
       .orderBy("ContestantNo")
@@ -65,7 +67,6 @@ function Admin() {
           console.log(snapShot.size);
           snapShot.forEach((contestant) => {
             //seperate the applications based on gendre
-
             if (contestant?.data().Gender === "male") {
               male_list.push({ id: contestant.id, ...contestant.data() });
             } else {
@@ -82,8 +83,9 @@ function Admin() {
       });
     return sub;
   }, [round]);
-  //get current round
+
   useEffect(() => {
+    //get current round from DB
     const sub = database
       .collection("Round")
       .doc("round")
@@ -96,7 +98,7 @@ function Admin() {
       });
     return sub;
   }, []);
-  //reset when round changed
+  //listener to reset all variables to default values when round number changed
   useEffect(() => {
     setmaleIndex(0);
     setfemaleIndex(0);
@@ -171,17 +173,16 @@ function Admin() {
 
     return `${placement}th`;
   };
-  //get top from list
+  //get top males from list
   const getTopmales = () => {
     let result = [];
-
     round === 2 &&
       JSON.stringify(finalScoreStatemale) !== "{}" &&
       Object.keys(finalScoreStatemale)
         .sort((a, b) => finalScoreStatemale[a] - finalScoreStatemale[b])
         .reverse()
         .forEach((key, index) => {
-          males.concat(females).forEach((human) => {
+          males.forEach((human) => {
             if (human.ContestantNo === Number(key)) {
               result.push(human);
             }
@@ -193,7 +194,7 @@ function Admin() {
         .sort((a, b) => finalScoreStatemale[a] - finalScoreStatemale[b])
         .reverse()
         .forEach((key, index) => {
-          males.concat(females).forEach((human) => {
+          males.forEach((human) => {
             if (human.ContestantNo === Number(key)) {
               result.push(human);
             }
@@ -204,6 +205,7 @@ function Admin() {
       return result.filter((n) => n).slice(0, round < 3 ? 5 : 3);
     else return "Calculate Scores First";
   };
+  //get top males from list
   const getTopfemales = () => {
     let result = [];
     round === 2 &&
@@ -212,7 +214,7 @@ function Admin() {
         .sort((a, b) => finalScoreStatefemale[a] - finalScoreStatefemale[b])
         .reverse()
         .forEach((key, index) => {
-          males.concat(females).forEach((human) => {
+          females.forEach((human) => {
             if (human.ContestantNo === Number(key)) {
               result.push(human);
             }
@@ -224,7 +226,7 @@ function Admin() {
         .sort((a, b) => finalScoreStatefemale[a] - finalScoreStatefemale[b])
         .reverse()
         .forEach((key, index) => {
-          males.concat(females).forEach((human) => {
+          females.forEach((human) => {
             if (human.ContestantNo === Number(key)) {
               result.push(human);
             }
@@ -235,7 +237,7 @@ function Admin() {
       return result.filter((n) => n).slice(0, round < 3 ? 5 : 3);
     else return "Calculate Scores First";
   };
-  //get score from round number and ata obj
+  //get score based  on round number and data object
   const getContestantScore = (rnd, data) => {
     switch (rnd) {
       case 1:
@@ -351,7 +353,7 @@ function Admin() {
     }
   };
 
-  //calculte the current round score
+  //calculte the current round score for both genders
   const currentRoundScoresCalculator = async () => {
     let scores = {};
 
@@ -467,17 +469,16 @@ function Admin() {
         });
     });
   };
-  //move to current contestant
+  // change indexs to next index in list based on gendre
   const Move = (indecator, gendre) => {
     if (gendre === "male") {
-      // if (maleIndex + indecator > males.length - 1) return;
       setmaleIndex(maleIndex + indecator);
     } else {
-      // if (femaleIndex + indecator > females.length - 1) return;
       setfemaleIndex(femaleIndex + indecator);
     }
   };
   //show current Contestant to the judges
+  //in other words move  to current contestant to the DB as currentContestant
   const Submit = (gendre) => {
     gendre === "male"
       ? database
@@ -493,12 +494,7 @@ function Admin() {
     <div className="App">
       <div className="nav_bar_container">
         <a href="#round">Round</a>
-        <a
-          href="#scores"
-          onClick={() => {
-            // console.log(auth().currentUser.uid);
-          }}
-        >
+        <a href="#scores" onClick={() => {}}>
           Scores
         </a>
         <a
